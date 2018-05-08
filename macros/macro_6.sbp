@@ -1,0 +1,5 @@
+'!FABMO!name:Start Spindle
+'!FABMO!description:Start the spindle (and prompt
+SO,1,1
+'PAUSE "Press the green button."
+PAUSE 2

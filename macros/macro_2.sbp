@@ -1,0 +1,33 @@
+'!FABMO!name:Find Table Origin
+'!FABMO!description:Search for Z,Y,X Prox Switches
+' ATC HOMING MACRO
+&XBackoff = 0.375
+&YBackoff = 0.875
+&ZBackoff = 0.100
+
+GOSUB HomeZ
+GOSUB HomeY
+GOSUB HomeX
+
+END
+
+HomeX:
+	ZX	
+	PX,-96,1,2
+    JX,%(1)+&XBackoff
+	VA,0,,,,,,0,,,,,
+	RETURN
+    
+HomeY:
+	ZY	
+	PY,-48,1,3
+    JY,%(2)+&YBackoff
+	VA,,0,,,,,,0,,,,
+	RETURN
+    
+HomeZ:
+	ZZ	
+	PZ,10,1,5
+    JZ,%(3)-&ZBackoff
+	VA,,,0,,,,,,0,,,
+	RETURN
