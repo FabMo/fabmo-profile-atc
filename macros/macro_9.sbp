@@ -6,38 +6,53 @@ SC,0
 
 $CurrentTool := 1
 
+$Tool1Length := 0
+$Tool2Length := 0
+$Tool3Length := 0
+$Tool4Length := 0
+$Tool5Length := 0
+$Tool6Length := 0
+$Tool7Length := 0
+$Tool8Length := 0
+$Tool9Length := 0
+$Tool10Length := 0
+
 &ToolHolderXClearance = 1.5
 $ToolHolderHeight = 1.962
 &ToolXFudge = 0.0625
 &PickupClearance = 0.5
 
-IF &Tool == $CurrentTool THEN GOTO AllDone
+IF &Tool == $CurrentTool THEN GOTO AlreadyHaveThisTool
 
+JZ,0
 GOSUB MakeSureSpindleIsOff
-
+IF $CurrentTool == 0 THEN GOTO LABEL
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
 PAUSE 0.1
-JZ,0
 
 Prep:
 	GOSUB MoveClearOfToolBar
 	GOSUB GetCurrentZOffset
-
+LABEL:
 	IF %(57) == 1 THEN GOTO HasTool
 	NoTool:
+    	&CurrentZOffset = 0
 		&ToolLane = &Tool
+        &ToolToLoad = &Tool
+		GOSUB LoadToolValues
 		GOSUB MoveToFirstOrLastLane
         JX,&ToolX+&ToolHolderXClearance
     	PAUSE 0.1
-		GOTO Pickup    
+		GOTO Pickup
     HasTool:
 		&ToolLane = $CurrentTool
 		GOSUB MoveToFirstOrLastLane
 		GOTO DropOff    
-        
 DropOff:
   GOSUB DropOffTool
+
+IF &Tool == 0 THEN GOTO DontPickup
 
 Pickup:
   &ToolToLoad = &Tool
@@ -52,8 +67,19 @@ Pickup:
   &NewOffset = -1.0*(&ToolLength + &CurrentZOffset)
   VA,,,&NewOffset
 
-  'PAUSE "Dropped off tool to table: " + &CurrentZOffset
+  GOTO AllDone
+  
+DontPickup:
+  VA,,,0
+  $CurrentTool = 0
+  JZ,0
+  GOSUB MoveToNearestLane 
+  JX,&ToolX-(5*&ToolHolderXClearance)
+  
+  AlreadyHaveThisTool:
+  'PAUSE "Not picking up tool " + &Tool + "Because current tool is " + $CurrentTool
   AllDone:
+
 	'GOSUB RestoreSpeeds
 	END
 
@@ -63,6 +89,7 @@ DropOffTool:
     JX,&ToolX+&ToolHolderXClearance
     PAUSE 0.1
     JY,&ToolY
+    PAUSE 0.1
     JZ,&ToolZ-$ToolHolderHeight
     MS,0.5
     MX,&ToolX+&ToolXFudge
@@ -84,8 +111,8 @@ PickUpTool:
 	PAUSE 0.75
     JX,&ToolX+&ToolHolderXClearance
     'PAUSE "Tool Length: " + &ToolLength + "Current Z Offset: " + &CurrentZOffset
-    '&NewOffset = &ToolLength + &CurrentZOffset
-    'VA,,,&NewOffset
+    &NewOffset = &ToolLength + &CurrentZOffset
+    VA,,,&NewOffset
     $CurrentTool = &Tool
 	RETURN
     
@@ -129,7 +156,28 @@ LoadToolValues:
   &ToolZ = $Tool6Z
   &ToolLength = $Tool6Length
   IF &ToolToLoad == 6 THEN GOTO ToolValuesLoaded
-  END "Unknown tool."
+  &ToolX = $Tool7X
+  &ToolY = $Tool7Y
+  &ToolZ = $Tool7Z
+  &ToolLength = $Tool7Length
+  IF &ToolToLoad == 7 THEN GOTO ToolValuesLoaded
+  &ToolX = $Tool8X
+  &ToolY = $Tool8Y
+  &ToolZ = $Tool8Z
+  &ToolLength = $Tool8Length
+  IF &ToolToLoad == 8 THEN GOTO ToolValuesLoaded
+  &ToolX = $Tool9X
+  &ToolY = $Tool9Y
+  &ToolZ = $Tool9Z
+  &ToolLength = $Tool9Length
+  IF &ToolToLoad == 9 THEN GOTO ToolValuesLoaded
+  &ToolX = $Tool10X
+  &ToolY = $Tool10Y
+  &ToolZ = $Tool10Z
+  &ToolLength = $Tool10Length
+  IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
+
+END "Unknown tool."
 ToolValuesLoaded:
   	RETURN
 
@@ -160,10 +208,12 @@ MoveToNearestLane:
     RETURN
     
 MoveToFirstOrLastLane:
-	IF &ToolLane <= 3 THEN GOTO GoFirstLane
-    GoLastLane:
-	JY,$Tool6Y+5.0
-    RETURN
+	' Just go to the first lane, play it safe
+	'IF &ToolLane <= 3 THEN GOTO GoFirstLane
+    'GOTO GoFirstLane
+    'GoLastLane:
+	'JY,$Tool6Y+5.0
+    'RETURN
     GoFirstLane:
 	JY,$Tool1Y-5.0
     RETURN

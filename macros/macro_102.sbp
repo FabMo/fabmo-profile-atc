@@ -2,13 +2,15 @@
 '!FABMO!description:Determine the current tool's length with the pressure plate
 SC,0 ' Table base coordinates
 &backoff = 0.25
+&PlateX = $Tool1X-0.1
+&PlateY = $Tool1Y-$ToolBarPitch-0.2
+
+'IF %(57) == 0 THEN GOTO NoTool
 
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
 
 GOSUB MoveClearOfToolBar
-
-
 
 ' Probe Z (Fast)
 PZ,$Tool1Z-3.0,0.5,1
@@ -24,6 +26,8 @@ PZ,%(3)-2*&backoff,0.1,1
 GOSUB SaveToolValues
 
 JZ,0
+MS,6,3
+MX,&PlateX-7.936
 END
 
 LoadToolValues:
@@ -39,7 +43,17 @@ LoadToolValues:
   IF &ToolToLoad == 5 THEN GOTO ToolValuesLoaded
   &ToolZ = $Tool6Z
   IF &ToolToLoad == 6 THEN GOTO ToolValuesLoaded
-  END "Unknown tool."
+  &ToolZ = $Tool7Z
+  IF &ToolToLoad == 7 THEN GOTO ToolValuesLoaded
+  &ToolZ = $Tool8Z
+  IF &ToolToLoad == 8 THEN GOTO ToolValuesLoaded
+  &ToolZ = $Tool9Z
+  IF &ToolToLoad == 9 THEN GOTO ToolValuesLoaded
+  &ToolZ = $Tool10Z
+  IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
+
+  END "Unknown tool"
+
 ToolValuesLoaded:
   	RETURN
     
@@ -50,7 +64,11 @@ SaveToolValues:
 	IF &ToolToSave == 4 THEN GOTO SaveTool4
 	IF &ToolToSave == 5 THEN GOTO SaveTool5
 	IF &ToolToSave == 6 THEN GOTO SaveTool6
-	END
+	IF &ToolToSave == 7 THEN GOTO SaveTool7
+	IF &ToolToSave == 8 THEN GOTO SaveTool8
+	IF &ToolToSave == 9 THEN GOTO SaveTool9
+	IF &ToolToSave == 10 THEN GOTO SaveTool10
+	END "Unknown Tool."
     
     SaveTool1:
     	$Tool1Length = &ToolLength
@@ -70,6 +88,18 @@ SaveToolValues:
     SaveTool6:
     	$Tool6Length = &ToolLength
     	GOTO ToolValuesSaved
+    SaveTool7:
+    	$Tool7Length = &ToolLength
+    	GOTO ToolValuesSaved
+    SaveTool8:
+    	$Tool8Length = &ToolLength
+    	GOTO ToolValuesSaved
+    SaveTool9:
+    	$Tool9Length = &ToolLength
+    	GOTO ToolValuesSaved
+    SaveTool10:
+    	$Tool10Length = &ToolLength
+    	GOTO ToolValuesSaved
 
 	ToolValuesSaved:
     	RETURN
@@ -83,8 +113,11 @@ MoveClearOfToolBar:
   JX,$Tool1X+1.5
   RETURN
   MoveY:
-	JY,$Tool1Y-$ToolBarPitch
+	JY,&PlateY
 	PAUSE 0.1
-	JX,$Tool1X
+	JX,&PlateX
 	PAUSE 0.1
     RETURN
+    
+NoTool:
+   END

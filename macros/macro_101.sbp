@@ -36,7 +36,6 @@ Main:
 	$Tool1X = &ToolHolderX
     $Tool1Y = &ToolHolderY
     $Tool1Z = &ToolHolderZ - &DrillRodLength
-    
     GOSUB DoNext
 
 	&Tool = 2
@@ -72,9 +71,37 @@ Main:
     $Tool6X = &ToolHolderX
     $Tool6Y = &ToolHolderY
     $Tool6Z = &ToolHolderZ - &DrillRodLength
+    GOSUB DoNext
+    
+    &Tool = 7
+    GOSUB FindToolHolder
+    $Tool7X = &ToolHolderX
+    $Tool7Y = &ToolHolderY
+    $Tool7Z = &ToolHolderZ - &DrillRodLength
+    GOSUB DoNext
+    
+    &Tool = 8
+    GOSUB FindToolHolder
+    $Tool8X = &ToolHolderX
+    $Tool8Y = &ToolHolderY
+    $Tool8Z = &ToolHolderZ - &DrillRodLength
+    GOSUB DoNext
+    
+    &Tool = 9
+    GOSUB FindToolHolder
+    $Tool9X = &ToolHolderX
+    $Tool9Y = &ToolHolderY
+    $Tool9Z = &ToolHolderZ - &DrillRodLength
+    GOSUB DoNext
+    
+    &Tool = 10
+    GOSUB FindToolHolder
+    $Tool10X = &ToolHolderX
+    $Tool10Y = &ToolHolderY
+    $Tool10Z = &ToolHolderZ - &DrillRodLength
 
-    JZ,&ToolHolderZ+&ZClearSmall
-
+	JZ,&ToolHolderZ+&ZClearSmall
+	PAUSE "Calibration Complete"
 ' Done
 
 END
@@ -129,5 +156,6 @@ DoNext:
     JZ,&ToolHolderZ+&ZClearSmall
 	PAUSE "Move the tool holder to position " + (&Tool+1) + ", or quit to finish"
     J2,&ToolHolderX,&ToolHolderY+$ToolBarPitch
+    PAUSE 0.5
     JZ,&ToolHolderZ-&ZDepthForProbe
     RETURN
