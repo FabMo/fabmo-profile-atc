@@ -2,6 +2,7 @@
 '!FABMO!description:Use ATC or manual tool change
 SC,0
 
+
 'GOSUB SaveSpeeds
 
 $CurrentTool := 1
@@ -17,6 +18,8 @@ $Tool8Length := 0
 $Tool9Length := 0
 $Tool10Length := 0
 
+$ToolZeroOffset := 0
+
 &ToolHolderXClearance = 1.5
 $ToolHolderHeight = 1.962
 &ToolXFudge = 0.0625
@@ -26,19 +29,20 @@ IF &Tool == $CurrentTool THEN GOTO AlreadyHaveThisTool
 
 JZ,0
 GOSUB MakeSureSpindleIsOff
-IF $CurrentTool == 0 THEN GOTO LABEL
+
+IF $CurrentTool == 0 THEN GOTO ShouldBeEmpty
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
 PAUSE 0.1
 
 Prep:
-	GOSUB MoveClearOfToolBar
 	GOSUB GetCurrentZOffset
-LABEL:
+ShouldBeEmpty:
+	GOSUB MoveClearOfToolBar
 	IF %(57) == 1 THEN GOTO HasTool
 	NoTool:
-    	&CurrentZOffset = 0
-		&ToolLane = &Tool
+		GOSUB GetCurrentZOffset
+        &ToolLane = &Tool
         &ToolToLoad = &Tool
 		GOSUB LoadToolValues
 		GOSUB MoveToFirstOrLastLane
@@ -79,11 +83,10 @@ DontPickup:
   AlreadyHaveThisTool:
   'PAUSE "Not picking up tool " + &Tool + "Because current tool is " + $CurrentTool
   AllDone:
-
-	'GOSUB RestoreSpeeds
 	END
 
 DropOffTool:
+	$ToolZeroOffset = &CurrentZOffset
 	&ToolX = &ToolX + &ToolXFudge
 	JZ,0
     JX,&ToolX+&ToolHolderXClearance
@@ -97,7 +100,7 @@ DropOffTool:
     PAUSE 0.5
     JZ,0
     SO,8,0    
-    RETURN
+	RETURN
     
 PickUpTool:
 	&ToolX = &ToolX + &ToolXFudge
@@ -118,11 +121,15 @@ PickUpTool:
     
 ' Calculate the current Z offset (must load tool length first)
 GetCurrentZOffset:
+	IF $CurrentTool == 0 THEN GOTO SetToolZeroOffset
 	&TableZ = %(3)
     SC,1
     &UserZ = %(3)
     SC,0
     &CurrentZOffset = (&TableZ-&UserZ) - &ToolLength
+    RETURN
+    SetToolZeroOffset:
+    &CurrentZOffset = $ToolZeroOffset
     RETURN
     
 LoadToolValues:
@@ -176,6 +183,11 @@ LoadToolValues:
   &ToolZ = $Tool10Z
   &ToolLength = $Tool10Length
   IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
+  '&ToolX = 96
+  '&ToolY = 0
+  '&ToolZ = 0
+  '&ToolLength = 0
+  'IF &ToolToLoad == 0 THEN GOTO ToolValuesLoaded
 
 END "Unknown tool."
 ToolValuesLoaded:
@@ -215,7 +227,9 @@ MoveToFirstOrLastLane:
 	'JY,$Tool6Y+5.0
     'RETURN
     GoFirstLane:
+    IF %(2) < $Tool1Y-5.0 THEN GOTO DontMoveToFirstLane
 	JY,$Tool1Y-5.0
+    DontMoveToFirstLane:
     RETURN
     
 MakeSureSpindleIsOff:
