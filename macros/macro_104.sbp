@@ -30,4 +30,7 @@ LABEL:
 ALLDONE:
 	JZ,0
     J2,0,0
+    SO,8,1
+    PAUSE 3
+    SO,8,0
 	END

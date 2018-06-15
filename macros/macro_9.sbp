@@ -8,15 +8,25 @@ SC,0
 $CurrentTool := 1
 
 $Tool1Length := 0
+$Tool1Name := "Tool 1"
 $Tool2Length := 0
+$Tool1Name := "Tool 2"
 $Tool3Length := 0
+$Tool1Name := "Tool 3"
 $Tool4Length := 0
+$Tool1Name := "Tool 4"
 $Tool5Length := 0
+$Tool1Name := "Tool 5"
 $Tool6Length := 0
+$Tool1Name := "Tool 6"
 $Tool7Length := 0
+$Tool1Name := "Tool 7"
 $Tool8Length := 0
+$Tool1Name := "Tool 8"
 $Tool9Length := 0
+$Tool1Name := "Tool 9"
 $Tool10Length := 0
+$Tool1Name := "Tool 10"
 
 $ToolZeroOffset := 0
 
@@ -30,6 +40,8 @@ IF &Tool == $CurrentTool THEN GOTO AlreadyHaveThisTool
 JZ,0
 GOSUB MakeSureSpindleIsOff
 
+IF &Tool == 0 THEN GOSUB CheckForEmptyDropOff
+
 IF $CurrentTool == 0 THEN GOTO ShouldBeEmpty
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
@@ -38,9 +50,9 @@ PAUSE 0.1
 Prep:
 	GOSUB GetCurrentZOffset
 ShouldBeEmpty:
-	GOSUB MoveClearOfToolBar
 	IF %(57) == 1 THEN GOTO HasTool
 	NoTool:
+		GOSUB MoveClearOfToolBar
 		GOSUB GetCurrentZOffset
         &ToolLane = &Tool
         &ToolToLoad = &Tool
@@ -50,6 +62,7 @@ ShouldBeEmpty:
     	PAUSE 0.1
 		GOTO Pickup
     HasTool:
+		GOSUB MoveClearOfToolBar
 		&ToolLane = $CurrentTool
 		GOSUB MoveToFirstOrLastLane
 		GOTO DropOff    
@@ -244,3 +257,14 @@ SaveSpeeds:
 RestoreSpeeds:
 	MS,&XYSpeed,&ZSpeed
     RETURN
+    
+CheckForEmptyDropOff:
+	IF %(57) == 1 THEN GOTO DropOffIsNotEmpty
+	JZ,0
+	VA,,,0
+  	$CurrentTool = 0
+	END
+	DropOffIsNotEmpty:
+  		RETURN
+
+    
