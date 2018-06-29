@@ -37,6 +37,6 @@ check_input_fail:
 	Input switch is already tripped. Cannot zero the tool. Fix issue then click resume or quit to exit.
 	pause
     goto Main
-	END "Input switch is already tripped.  Cannot zero the tool."
+	FAIL "Input switch is already tripped.  Cannot zero the tool."
     
    

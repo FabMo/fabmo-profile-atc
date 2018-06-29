@@ -202,7 +202,7 @@ LoadToolValues:
   '&ToolLength = 0
   'IF &ToolToLoad == 0 THEN GOTO ToolValuesLoaded
 
-END "Unknown tool."
+FAIL "Unknown tool."
 ToolValuesLoaded:
   	RETURN
 

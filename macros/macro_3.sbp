@@ -60,11 +60,7 @@ HomeZ:
     End 
     
 CouldntFindXProx:
-	END "Could not find the X prox switch.  Check input switch connections and try again."
+	FAIL "Could not find the X prox switch.  Check input switch connections and try again."
 
 CouldntFindYProx:
-	END "Could not find the Y prox switch.  Check input switch connections and try again."
-
-    
-    
-    
+	FAIL "Could not find the Y prox switch.  Check input switch connections and try again."

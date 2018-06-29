@@ -4,7 +4,7 @@
 &StepOver = 0.2
 &y = 0
 &Speed = 12
-&CutDepth = -0.04
+&CutDepth = -0.125
 &Tool = 6
 
 C9
