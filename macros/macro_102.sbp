@@ -52,7 +52,7 @@ LoadToolValues:
   &ToolZ = $Tool10Z
   IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
 
-  END "Unknown tool"
+  FAIL "Unknown tool"
 
 ToolValuesLoaded:
   	RETURN
@@ -68,7 +68,7 @@ SaveToolValues:
 	IF &ToolToSave == 8 THEN GOTO SaveTool8
 	IF &ToolToSave == 9 THEN GOTO SaveTool9
 	IF &ToolToSave == 10 THEN GOTO SaveTool10
-	END "Unknown Tool."
+	FAIL "Unknown Tool."
     
     SaveTool1:
     	$Tool1Length = &ToolLength
