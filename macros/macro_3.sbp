@@ -51,7 +51,7 @@ HomeZ:
  check_input_fail_Prox:
     'Tool is on the Prox switch.  
     'pause
-    End "Input switch is already tripped.  Cannot zero the tool."
+    FAIL "Input switch is already tripped.  Cannot zero the tool."
     
  check_input_fail_driver:
     'Driver Fault. Reset input 4 then click resume or quit to exit.
