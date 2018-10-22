@@ -1,70 +1,89 @@
 '!FABMO!name:Tool Change
 '!FABMO!description:Use ATC or manual tool change
+
+' Set to "Table base" coordinates.  
+' All locations in this file are in the universal coordinate frame
 SC,0
 
-
-'GOSUB SaveSpeeds
-
+' CurrentTool keeps track of the tool that is currently in the spindle
 $CurrentTool := 1
 
+' Define a length and name for all 10 tools (if not already defined)
 $Tool1Length := 0
 $Tool1Name := "Tool 1"
 $Tool2Length := 0
-$Tool1Name := "Tool 2"
+$Tool2Name := "Tool 2"
 $Tool3Length := 0
-$Tool1Name := "Tool 3"
+$Tool3Name := "Tool 3"
 $Tool4Length := 0
-$Tool1Name := "Tool 4"
+$Tool4Name := "Tool 4"
 $Tool5Length := 0
-$Tool1Name := "Tool 5"
+$Tool5Name := "Tool 5"
 $Tool6Length := 0
-$Tool1Name := "Tool 6"
+$Tool6Name := "Tool 6"
 $Tool7Length := 0
-$Tool1Name := "Tool 7"
+$Tool7Name := "Tool 7"
 $Tool8Length := 0
-$Tool1Name := "Tool 8"
+$Tool8Name := "Tool 8"
 $Tool9Length := 0
-$Tool1Name := "Tool 9"
+$Tool9Name := "Tool 9"
 $Tool10Length := 0
-$Tool1Name := "Tool 10"
+$Tool10Name := "Tool 10"
 
 $ToolZeroOffset := 0
 
-&ToolHolderXClearance = 1.5
-$ToolHolderHeight = 1.962
-&ToolXFudge = 0.0625
-&PickupClearance = 0.5
+&ToolHolderXClearance = 1.5	    ' The distance to move in the X when pulling a tool out of the tool clip
+$ToolHolderHeight = 1.962		' The distance in Z between the Z value measured in calibration, and the Z value for putting a tool in a clip
+&ToolXFudge = 0.0625			' Fudge factor TODO: is this really needed?
+
+' Because there is so much Z distance from the prox switch to a properly captured tool in the toolbar, the move that lowers
+' the Z to capture the tool is done in two parts:  A jog to get it most of the way there, and then a final slower move that captures the tool
+' &PickupClearance is the length of the slow move
+&PickupClearance = 0.5			
+
 
 IF &Tool == $CurrentTool THEN GOTO AlreadyHaveThisTool
 
+' Pull Z all the way up, first (0 in table base is just below the prox switch)
 JZ,0
+
 GOSUB MakeSureSpindleIsOff
 
+' A request for tool 0 means "put the current tool away but don't pick another one up"
 IF &Tool == 0 THEN GOSUB CheckForEmptyDropOff
 
-IF $CurrentTool == 0 THEN GOTO ShouldBeEmpty
+' If i'm already "carrying" tool 0 then I would expect the spindle to be empty
+IF $CurrentTool == 0 THEN GOTO ShouldBeEmpty ' TODO : Pretty sure this shouldnt work, see below.  This should get tested.
+
+' Here, we prepare to drop off the tool that we're currently carrying.
+' We may find that we're not currently carrying the tool that we think we are, and we deal with that situation appropriately
+
+' Load the X,Y,Z position of the tool we're currently carring so we can go put it back
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
 PAUSE 0.1
 
+' Calculate the current z-offset : this is the offset between the z-prox and the user zero position for this tool, with the current tool length factored out
 Prep:
 	GOSUB GetCurrentZOffset
 ShouldBeEmpty:
-	IF %(57) == 1 THEN GOTO HasTool
+	IF %(57) == 1 THEN GOTO HasTool ' Different behavior depending on whether or not we're actually carrying a tool.
 	NoTool:
+		' If we're not carrying a tool, we actually setup to pick up the requested tool 
 		GOSUB MoveClearOfToolBar
 		GOSUB GetCurrentZOffset
-        &ToolLane = &Tool
-        &ToolToLoad = &Tool
+        '&ToolLane = &Tool
+        ' Load the X,Y,Z position of the tool we want to pick up
+		&ToolToLoad = &Tool
 		GOSUB LoadToolValues
-		GOSUB MoveToFirstOrLastLane
-        JX,&ToolX+&ToolHolderXClearance
+		GOSUB MoveToFirstLane
+        JX,&ToolX+&ToolHolderXClearance ' Get behind the tool bar
     	PAUSE 0.1
 		GOTO Pickup
     HasTool:
 		GOSUB MoveClearOfToolBar
-		&ToolLane = $CurrentTool
-		GOSUB MoveToFirstOrLastLane
+		'&ToolLane = $CurrentTool
+		GOSUB MoveToFirstLane
 		GOTO DropOff    
 DropOff:
   GOSUB DropOffTool
@@ -98,41 +117,47 @@ DontPickup:
   AllDone:
 	END
 
+' Drop off a tool
+' CAUTION: Assumes the tool clip being dropped into is empty
 DropOffTool:
 	$ToolZeroOffset = &CurrentZOffset
 	&ToolX = &ToolX + &ToolXFudge
-	JZ,0
-    JX,&ToolX+&ToolHolderXClearance
+	JZ,0								' Pull all the way up
+    JX,&ToolX+&ToolHolderXClearance		' Move behind the tool bar
     PAUSE 0.1
-    JY,&ToolY
+    JY,&ToolY							' Move to the clip that will receive the tool
     PAUSE 0.1
-    JZ,&ToolZ-$ToolHolderHeight
+    JZ,&ToolZ-$ToolHolderHeight			' Drop to the Z level needed 
     MS,0.5
-    MX,&ToolX+&ToolXFudge
-    SO,8,1
-    PAUSE 0.5
-    JZ,0
-    SO,8,0    
+    MX,&ToolX+&ToolXFudge				' Insert into clip
+    SO,8,1								' Open drawbar
+    PAUSE 0.5							' Wait a bit to ensure that the tool is released
+    JZ,0								' Pull all the way up
+    SO,8,0								' Close drawbar
 	RETURN
     
+' Pick up a tool
+' Assumes that &ToolX, &ToolY and &ToolZ are populated with the location of the tool to pickup
 PickUpTool:
-	&ToolX = &ToolX + &ToolXFudge
-	JZ,0
-	J2,&ToolX,&ToolY
-    MS,,1.0
-	SO,8,1
-    JZ,(&ToolZ-$ToolHolderHeight)+&PickupClearance
-    MZ,&ToolZ-$ToolHolderHeight
-    SO,8,0    
-	PAUSE 0.75
-    JX,&ToolX+&ToolHolderXClearance
-    'PAUSE "Tool Length: " + &ToolLength + "Current Z Offset: " + &CurrentZOffset
-    &NewOffset = &ToolLength + &CurrentZOffset
+	&ToolX = &ToolX + &ToolXFudge 
+	JZ,0												' Pull all the way up 
+	J2,&ToolX,&ToolY									' Position above the tool
+    MS,,1.0												' Set the Z-speed to be appropriate for tool capture
+	SO,8,1												' Open drawbar
+    JZ,(&ToolZ-$ToolHolderHeight)+&PickupClearance		' Drop the Z fast to a level where the tool holder is mostly captured
+    MZ,&ToolZ-$ToolHolderHeight							' Slow the Z down and do the rest of the capture at move speed
+    SO,8,0												' Close drawbar
+	PAUSE 0.75											' Wait a little bit to ensure that the tool is captured
+    JX,&ToolX+&ToolHolderXClearance						' Pull out of the tool clip
+
+	' The new Z offset is computed and set 
+    &NewOffset = &ToolLength + &CurrentZOffset			
     VA,,,&NewOffset
-    $CurrentTool = &Tool
+    $CurrentTool = &Tool								' Update the current tool, now that weve picked it up
 	RETURN
     
 ' Calculate the current Z offset (must load tool length first)
+' Returns the offset in the &CurrentZOffset variable
 GetCurrentZOffset:
 	IF $CurrentTool == 0 THEN GOTO SetToolZeroOffset
 	&TableZ = %(3)
@@ -145,6 +170,7 @@ GetCurrentZOffset:
     &CurrentZOffset = $ToolZeroOffset
     RETURN
     
+' Load &ToolX,&ToolY,&ToolZ,&ToolLength with values based on &ToolToLoad
 LoadToolValues:
   &ToolX = $Tool1X
   &ToolY = $Tool1Y
@@ -196,30 +222,23 @@ LoadToolValues:
   &ToolZ = $Tool10Z
   &ToolLength = $Tool10Length
   IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
-  '&ToolX = 96
-  '&ToolY = 0
-  '&ToolZ = 0
-  '&ToolLength = 0
-  'IF &ToolToLoad == 0 THEN GOTO ToolValuesLoaded
-
-FAIL "Unknown tool."
-ToolValuesLoaded:
+  FAIL "Unknown tool."
+  ToolValuesLoaded:
   	RETURN
 
+' Get the toolhead out of the toolbar area by moving behind it if we're in the area of the toolbar, or doing nothing if we're not.
 MoveClearOfToolBar:
-  &BehindToolBar = 0
   JZ,0
   IF %(1) <= $Tool1X - 1.5 THEN GOTO ClearOfToolBar
-  IF %(1) >= $Tool1X + 1.5 THEN GOTO BehindToolBar
+  IF %(1) >= $Tool1X + 1.5 THEN GOTO ClearOfToolBar
   JX,$Tool1X+1.5
   PAUSE 0.1
-  BehindToolBar:
-	  &BehindToolBar = 1
-  	ClearOfToolBar:
-		RETURN
+  ClearOfToolBar:
+	RETURN
 
+' Moves in the Y only to the nearest "slot" between tool clips.
+' This is used, for example, after picking up a tool, when we want to bring it out to the table
 MoveToNearestLane:
-	'IF &BehindToolBar > 0 THEN GOTO DoneMoveToNearestLane
 	IF %(2) >= &ToolY THEN GOTO OneMore
     IF %(2) < &ToolY THEN GOTO OneLess
     PAUSE 0.1
@@ -232,13 +251,8 @@ MoveToNearestLane:
     DoneMoveToNearestLane:
     RETURN
     
-MoveToFirstOrLastLane:
-	' Just go to the first lane, play it safe
-	'IF &ToolLane <= 3 THEN GOTO GoFirstLane
-    'GOTO GoFirstLane
-    'GoLastLane:
-	'JY,$Tool6Y+5.0
-    'RETURN
+' Moves toolhead to the first lane only if it is not already past it. 
+MoveToFirstLane:
     GoFirstLane:
     IF %(2) < $Tool1Y-5.0 THEN GOTO DontMoveToFirstLane
 	JY,$Tool1Y-5.0
@@ -248,20 +262,15 @@ MoveToFirstOrLastLane:
 MakeSureSpindleIsOff:
 	SO,1,0
     RETURN
-    
-SaveSpeeds:
-	&XYSpeed = %(71)
-	&ZSpeed = %(73)
-	RETURN
 
-RestoreSpeeds:
-	MS,&XYSpeed,&ZSpeed
-    RETURN
     
+' Drop off the current tool and switch to tool zero.  Don't do a drop off if the spindle is already empty.
 CheckForEmptyDropOff:
+	' Drop off if we're carrying something
 	IF %(57) == 1 THEN GOTO DropOffIsNotEmpty
+	' Switch to tool 0
 	JZ,0
-	VA,,,0
+	VA,,,0 ' "Tool 0" z offset is simply the table base Z offset (no offset)
   	$CurrentTool = 0
 	END
 	DropOffIsNotEmpty:

@@ -2,14 +2,18 @@
 '!FABMO!description:Determine the current tool's length with the pressure plate
 SC,0 ' Table base coordinates
 &backoff = 0.25
+
+' Location of the pressure plate (Calculated here as being a specific distance from the known position of tool 1)
 &PlateX = $Tool1X-0.1
 &PlateY = $Tool1Y-$ToolBarPitch-0.2
 
 'IF %(57) == 0 THEN GOTO NoTool
 
+' Load up the X,Y,Z values for the current tool
 &ToolToLoad = $CurrentTool
 GOSUB LoadToolValues
 
+' Get out of the way of the toolbar
 GOSUB MoveClearOfToolBar
 
 ' Probe Z (Fast)
@@ -22,14 +26,17 @@ PZ,%(3)-2*&backoff,0.1,1
 ' Measure Z and calculate length
 &ToolLength = %(3)
 
+' Record the measured length
 &ToolToSave = $CurrentTool
 GOSUB SaveToolValues
 
+' Pull up, and move out
 JZ,0
 MS,6,3
-MX,&PlateX-7.936
+MX,&PlateX-7.936 ' TODO Whyyy this specific number?
 END
 
+' Load the Z value for the tool specified by &ToolToLoad
 LoadToolValues:
   &ToolZ = $Tool1Z
   IF &ToolToLoad == 1 THEN GOTO ToolValuesLoaded
@@ -51,12 +58,11 @@ LoadToolValues:
   IF &ToolToLoad == 9 THEN GOTO ToolValuesLoaded
   &ToolZ = $Tool10Z
   IF &ToolToLoad == 10 THEN GOTO ToolValuesLoaded
-
   FAIL "Unknown tool"
-
-ToolValuesLoaded:
+  ToolValuesLoaded:
   	RETURN
     
+' Save the tool length ($ToolXLength) for the tool specified by &ToolToSave
 SaveToolValues:
 	IF &ToolToSave == 1 THEN GOTO SaveTool1
 	IF &ToolToSave == 2 THEN GOTO SaveTool2
@@ -106,7 +112,6 @@ SaveToolValues:
         
 
 MoveClearOfToolBar:
-  ' Position above the pressure plate (
   JZ,0
   IF %(1) <= $Tool1X - 1.5 THEN GOTO MoveY
   IF %(1) >= $Tool1X + 1.5 THEN GOTO MoveY

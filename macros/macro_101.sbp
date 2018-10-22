@@ -4,14 +4,14 @@ SC,0
 
 &ToolHolderOD = 1.58
 &ToolHolderID = 1.25
-&ZDepthForProbe = 0.25
-&EmptySearchDistance = 2.0
-&DrillRodOffset = 0.75
-&ZClear = 1.0
-&ZClearSmall = 0.25
+&ZDepthForProbe = 0.25		' How far below the lip of the tool holder to plunge when center-finding
+&EmptySearchDistance = 2.0	' How far to search when looking for the upside-down empty tool holder
+&DrillRodOffset = 0.75	
+&ZClear = 1.0				' How much to pull up the Z for clearing (moving between tools, etc)
+&ZClearSmall = 0.25			' How much to pull up the Z to clear, but tighter
 
 $ToolHolderHeight = 1.0
-$ToolBarPitch = 4.5
+$ToolBarPitch = 4.5			' Distance from one tool clip to the next
 
 ' Calculated
 &ToolHolderDiameter = &ToolHolderID + ((&ToolHolderOD-&ToolHolderID)/2.0)
@@ -109,15 +109,19 @@ END
 GOSUB FindToolHolder
 END
 
+' Find the empty tool cup
+' This function should be called when positioned with the empty tool cup in the spindle, and the mating one
+' upside down in a tool clip, with the spindle positioned above the tool clip.
 FindToolHolderEmpty:
-  PZ,%(3)-&EmptySearchDistance,0.5,1
-  JZ,%(3) + &ZClearSmall
-  PZ,%(3)-(2.0*&ZClearSmall),0.1,1
-  &EmptyToolHolderZ = %(3)
-  JZ,%(3)+&ZClearSmall
+  PZ,%(3)-&EmptySearchDistance,0.5,1	' Probe for tool holder
+  JZ,%(3) + &ZClearSmall				' Pull up to clear
+  PZ,%(3)-(2.0*&ZClearSmall),0.1,1		' Probe again (slow)
+  &EmptyToolHolderZ = %(3)				' Record the position
+  JZ,%(3)+&ZClearSmall					' Pull up to clear
   RETURN
   
-  
+' Find the X,Y,Z position of this tool holder
+' Assumes the drill rod is inside the perimeter of the tool holder and that the Z is below the rim
 FindToolHolder:
 	GOSUB FindToolHolderXY
     GOSUB FindToolHolderZ
@@ -152,10 +156,16 @@ FindToolHolderZ:
     &ToolHolderZ = %(3)
     RETURN
 
+' Do the next tool holder
+' This function is called when the tool holder position has just been determined in X,Y and Z
+' and the toolhead Z position is just touching the edge of the tool cup (having just done the z-probe)
 DoNext:
-    JZ,&ToolHolderZ+&ZClearSmall
+    JZ,&ToolHolderZ+&ZClearSmall	' Pull up to clear
+	' Prompt
 	PAUSE "Move the tool holder to position " + (&Tool+1) + ", or quit to finish"
-    J2,&ToolHolderX,&ToolHolderY+$ToolBarPitch
+    ' Advance to the next tool clip position
+	J2,&ToolHolderX,&ToolHolderY+$ToolBarPitch
     PAUSE 0.5
+	' Plunge the drill rod below the surface of the 
     JZ,&ToolHolderZ-&ZDepthForProbe
     RETURN
